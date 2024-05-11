@@ -1,0 +1,94 @@
+services:
+
+  mariadb:
+    container_name: mariadb
+    build:
+      context: ./requirements/mariadb
+      args:
+        - MYSQL_USER
+        - MYSQL_USER_PASSWORD
+        - MYSQL_NAME
+        - MYSQL_ROOT_PASSWORD
+        - MYSQL_ROOT
+    image: mariadb
+    env_file:
+      - .env
+    volumes:
+      - mariadb:/var/lib/mysql
+    restart: always
+    networks:
+      - inception
+
+
+  wordpress:
+    container_name: wordpress
+    env_file:
+      - .env
+    build:
+      context: ./requirements/wordpress
+      args:
+        - MYSQL_USER
+        - MYSQL_USER_PASSWORD
+        - MYSQL_NAME
+        - MYSQL_ROOT_PASSWORD
+        - WP_ADMIN_USER
+        - WP_ADMIN_PASSWORD
+        - WP_ADMIN_EMAIL
+        - WP_USER
+        - WP_USER_PASSWORD
+        - WP_USER_EMAIL
+        - WP_DB_HOST
+        - WP_TITLE
+        - DOMAIN_NAME
+    image: wordpress
+    volumes:
+      - wordpress:/var/www/wordpress
+    restart: always
+    depends_on:
+      - mariadb
+    networks:
+      - inception
+
+  nginx:
+    container_name: nginx
+    env_file:
+      - .env
+    build:
+      context: ./requirements/nginx
+      args:
+        - CERT_
+        - CERT_KEY
+        - OPENSSL
+        - DOMAIN_NAME
+    image: nginx
+    ports:
+    - "443:443"
+    volumes:
+      - wordpress:/var/www/wordpress
+    restart: always
+    depends_on:
+      - wordpress
+      - mariadb
+    networks:
+      - inception
+
+volumes:
+    mariadb:
+      driver: local
+      name: mariadb
+      driver_opts:
+        type: 'none'
+        o: 'bind'
+        device: /home/thabeck-/data/mariadb/
+    wordpress:
+      driver: local
+      name: wordpress
+      driver_opts:
+        type: 'none'
+        o: 'bind'
+        device: /home/thabeck-/data/wordpress/
+
+networks:
+  inception:
+    driver: bridge
+    name: inception

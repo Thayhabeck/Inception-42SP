@@ -1,0 +1,48 @@
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+
+    server {
+        listen 80;
+        server_name localhost;
+        return 301 https://$DOMAIN_NAME$request_uri;
+    }
+
+    server {
+        listen       443 ssl;
+        server_name  $DOMAIN_NAME www.$DOMAIN_NAME;
+
+        ssl_certificate      $CERT_;
+        ssl_certificate_key  $CERT_KEY;
+        ssl_protocols        TLSv1.2 TLSv1.3;
+        
+        access_log   /var/log/nginx/access.log;
+        error_log    /var/log/nginx/errors.log;
+        root         /var/www/wordpress;
+        
+        index index.php index.html;
+
+        location ~ \.php$ {
+          include fastcgi_params;
+          try_files $uri /index.php =404;
+          fastcgi_split_path_info ^(.+\.php)(/.+)$;
+          fastcgi_pass   wordpress:9000;
+          fastcgi_index  index.php;
+          fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        }
+    }
+
+    server {
+        listen 443 ssl;
+        server_name localhost;
+        
+        ssl_certificate      $CERT_;
+        ssl_certificate_key  $CERT_KEY;
+        ssl_protocols        TLSv1.2 TLSv1.3;
+
+        return 301 https://$DOMAIN_NAME$request_uri;
+    }
+}
